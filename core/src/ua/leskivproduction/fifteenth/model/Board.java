@@ -99,7 +99,7 @@ public class Board implements Comparable<Board> {
                 }
             }
         }
-        return (dimension<4? 1 : dimension+2)*distance + searchNodeNum;
+        return (int)((dimension<4? 1 : dimension+1)*distance + searchNodeNum);
 //        return *distance + searchNodeNum;
     }
 

@@ -21,7 +21,7 @@ public class Fifteenth extends ApplicationAdapter {
 	private OrthographicCamera cam;
 
 	private static final int IMAGES_CNT = 8;
-	private static final int DIMENSION = 3;
+	private static final int DIMENSION = 4;
 	private Texture[] cellTextures;
 	private Board curBoard;
 	private BitmapFont mainFont;
@@ -43,16 +43,16 @@ public class Fifteenth extends ApplicationAdapter {
 	private int solutionStep;
 	private boolean solving;
 
-	private Music backgrondMusic;
+	private Music backgroundMusic;
 
 	@Override
 	public void create () {
 		batch = new SpriteBatch();
 		shapeRenderer = new ShapeRenderer();
 
-		backgrondMusic = Gdx.audio.newMusic(Gdx.files.internal("core/assets/wastingTime.mp3"));
-		backgrondMusic.setLooping(true);
-		backgrondMusic.play();
+		backgroundMusic = Gdx.audio.newMusic(Gdx.files.internal("core/assets/wastingTime.mp3"));
+		backgroundMusic.setLooping(true);
+		backgroundMusic.play();
 
 		FreeTypeFontGenerator generator = new FreeTypeFontGenerator(
 				Gdx.files.internal("core/assets/American Captain.ttf"));
