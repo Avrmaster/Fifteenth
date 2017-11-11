@@ -99,7 +99,8 @@ public class Board implements Comparable<Board> {
                 }
             }
         }
-        return 5*distance + searchNodeNum;
+        return (dimension<4? 1 : dimension+2)*distance + searchNodeNum;
+//        return *distance + searchNodeNum;
     }
 
     // чи є ця дошка цільовим станом
@@ -208,7 +209,7 @@ public class Board implements Comparable<Board> {
                 }
 
                 int manh = manhattan();
-                goalRed = (float)(Math.min(255, 255*manh/Math.pow(dimension, 4)));
+                goalRed = (float)(Math.min(255, 255*manh/(dimension < 4? 10 : Math.pow(dimension, 4))));
 
                 return true;
             }

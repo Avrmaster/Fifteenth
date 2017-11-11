@@ -3,6 +3,7 @@ package ua.leskivproduction.fifteenth;
 import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
+import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -12,13 +13,15 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import ua.leskivproduction.fifteenth.model.Board;
 import ua.leskivproduction.fifteenth.model.Solver;
 
+import java.text.DecimalFormat;
+
 public class Fifteenth extends ApplicationAdapter {
 	private SpriteBatch batch;
 	private ShapeRenderer shapeRenderer;
 	private OrthographicCamera cam;
 
 	private static final int IMAGES_CNT = 8;
-	private static final int DIMENSION = 5;
+	private static final int DIMENSION = 3;
 	private Texture[] cellTextures;
 	private Board curBoard;
 	private BitmapFont mainFont;
@@ -32,23 +35,31 @@ public class Fifteenth extends ApplicationAdapter {
 	private int shuffledCnt;
 
 	private final static float SOLVE_ANIMATION_TIME = 10;
-	private float solveInterval = 0;
+	private long solutionFoundTime;
+	private float solveInterval;
 	private float solvingTime;
+	private boolean solved;
 	private Board[] solution;
 	private int solutionStep;
 	private boolean solving;
+
+	private Music backgrondMusic;
 
 	@Override
 	public void create () {
 		batch = new SpriteBatch();
 		shapeRenderer = new ShapeRenderer();
 
+		backgrondMusic = Gdx.audio.newMusic(Gdx.files.internal("core/assets/wastingTime.mp3"));
+		backgrondMusic.setLooping(true);
+		backgrondMusic.play();
+
 		FreeTypeFontGenerator generator = new FreeTypeFontGenerator(
 				Gdx.files.internal("core/assets/American Captain.ttf"));
 		FreeTypeFontParameter parameter = new FreeTypeFontParameter();
-		parameter.size = (int)(Gdx.graphics.getHeight()*0.08);
+		parameter.size = (int)(Gdx.graphics.getHeight()*0.065);
 		parameter.color = Color.WHITE;
-		mainFont = generator.generateFont(parameter); // font size 12 pixels
+		mainFont = generator.generateFont(parameter);
 		generator.dispose();
 
 		cellTextures = new Texture[DIMENSION*DIMENSION];
@@ -97,18 +108,19 @@ public class Fifteenth extends ApplicationAdapter {
 							if (!solving) {
 								solving = true;
 								new Thread(() -> {
+									solutionFoundTime = System.currentTimeMillis();
 									Solver solver = new Solver(curBoard);
 									if (solver.isSolvable()) {
 										System.out.println("Will be done in "+solver.solution().length);
 										solution = solver.solution();
 										solveInterval = SOLVE_ANIMATION_TIME/solution.length;
-										solveInterval = Math.max(0.01f, Math.min(0.5f, solveInterval));
+										solveInterval = Math.max(0.02f, Math.min(0.3f, solveInterval));
 									} else {
 										System.out.println("This cannot be solved!");
 									}
+									solved = solver.isSolvable();
+									solutionFoundTime = System.currentTimeMillis()-solutionFoundTime;
 									solving = false;
-
-
 								}).start();
 							}
 						}
@@ -164,12 +176,18 @@ public class Fifteenth extends ApplicationAdapter {
 			mainFont.draw(batch, "Loading..", -Gdx.graphics.getWidth()/2+10, Gdx.graphics.getHeight()/2-10);
 			batch.end();
 		}
-		if (solution != null && solutionStep != solution.length) {
+		if (solved && solution != null) {
 			batch.begin();
-			mainFont.draw(batch, solutionStep+"/"+solution.length,
-					-Gdx.graphics.getWidth()/2+10, 0);
+			if (solutionStep != solution.length && curState == State.SOLVING) {
+				mainFont.draw(batch, solutionStep + "/" + solution.length,
+						-Gdx.graphics.getWidth() / 2 + 10, 0);
+			}
+			mainFont.draw(batch, "Found in "+new DecimalFormat("#.#").format(
+					(float)solutionFoundTime/1000)+" s",
+					-Gdx.graphics.getWidth()/2+10, Gdx.graphics.getHeight()/2-10);
 			batch.end();
 		}
+
 	}
 	
 	@Override
