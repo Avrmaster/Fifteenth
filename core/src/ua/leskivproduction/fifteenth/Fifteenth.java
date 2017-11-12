@@ -16,19 +16,22 @@ import ua.leskivproduction.fifteenth.model.Solver;
 import java.text.DecimalFormat;
 
 public class Fifteenth extends ApplicationAdapter {
+    private static final int IMAGES_CNT = 15;
+    private static final int DIMENSION = 4;
+
     private SpriteBatch batch;
     private ShapeRenderer shapeRenderer;
     private OrthographicCamera cam;
 
-    private static final int IMAGES_CNT = 15;
-    private static final int DIMENSION = 4;
     private Texture[] cellTextures;
     private Board curBoard;
-    private BitmapFont mainFont;
 
-    private enum State {SHUFFLING, SOLVING, IDLE}
+    private BitmapFont captainFont;
+    private BitmapFont jokerSmallFont;
+    private BitmapFont jokerMediumFont;
 
-    ;
+    private enum State {SHUFFLING, SOLVING, IDLE, CRAFTING}
+
     private State curState = State.IDLE;
 
     private final static float SHUFFLE_TIME = 2f;
@@ -36,14 +39,17 @@ public class Fifteenth extends ApplicationAdapter {
     private float shufflingTime;
     private int shuffledCnt;
 
-    private final static float SOLVE_ANIMATION_TIME = 15;
-    private long solutionFoundTime;
-    private float solveInterval;
-    private float solvingTime;
-    private boolean solved;
-    private Board[] solution;
-    private int solutionStep;
-    private boolean solving;
+    private Solver solver;
+
+    private BitmapFont genFont(String file, double size, Color color) {
+        FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.internal("core/assets/"+file));
+        FreeTypeFontParameter parameter = new FreeTypeFontParameter();
+        parameter.size = (int)size;
+        parameter.color = color;
+        BitmapFont font = generator.generateFont(parameter);
+        generator.dispose();
+        return font;
+    }
 
     @Override
     public void create() {
@@ -52,15 +58,11 @@ public class Fifteenth extends ApplicationAdapter {
 
         Music backgroundMusic = Gdx.audio.newMusic(Gdx.files.internal("core/assets/wastingTime.mp3"));
         backgroundMusic.setLooping(true);
-        backgroundMusic.play();
+        //backgroundMusic.play();
 
-        FreeTypeFontGenerator generator = new FreeTypeFontGenerator(
-                Gdx.files.internal("core/assets/American Captain.ttf"));
-        FreeTypeFontParameter parameter = new FreeTypeFontParameter();
-        parameter.size = (int) (Gdx.graphics.getHeight() * 0.065);
-        parameter.color = Color.WHITE;
-        mainFont = generator.generateFont(parameter);
-        generator.dispose();
+        captainFont = genFont("American Captain.ttf", Gdx.graphics.getHeight() * 0.065, Color.WHITE);
+        jokerSmallFont = genFont("Jokerman-Regular.ttf", Gdx.graphics.getHeight() * 0.085, Color.WHITE);
+        jokerMediumFont = genFont("Jokerman-Regular.ttf", Gdx.graphics.getHeight() * 0.100, Color.WHITE);
 
         cellTextures = new Texture[DIMENSION * DIMENSION];
         for (int i = 0; i < cellTextures.length; i++)
@@ -89,7 +91,7 @@ public class Fifteenth extends ApplicationAdapter {
                     }
                 switch (keycode) {
                     case Input.Keys.S:
-                        if (!solving) {
+                        if (solver == null || !solver.isSolving()) {
                             if (curState != State.SHUFFLING) {
                                 shuffledCnt = 0;
                                 shufflingTime = 0;
@@ -101,29 +103,12 @@ public class Fifteenth extends ApplicationAdapter {
                         break;
                     case Input.Keys.SPACE:
                         curState = curState != State.SOLVING ? State.SOLVING : State.IDLE;
-                        if (curState == State.SOLVING) {
-                            solution = null;
-                            solutionStep = 0;
-                            solvingTime = 0;
-                            if (!solving) {
-                                solving = true;
-                                new Thread(() -> {
-                                    solutionFoundTime = System.currentTimeMillis();
-                                    Solver solver = new Solver(curBoard);
-                                    if (solver.isSolvable()) {
-                                        System.out.println("Will be done in " + solver.solution().length);
-                                        solution = solver.solution();
-                                        solveInterval = SOLVE_ANIMATION_TIME / solution.length;
-                                        solveInterval = Math.max(0.02f, Math.min(0.3f, solveInterval));
-                                    } else {
-                                        System.out.println("This cannot be solved!");
-                                    }
-                                    solved = solver.isSolvable();
-                                    solutionFoundTime = System.currentTimeMillis() - solutionFoundTime;
-                                    solving = false;
-                                }).start();
-                            }
+                        if (curState == State.SOLVING && (solver == null || !solver.isSolving())) {
+                            solver = new Solver(curBoard);
                         }
+                        break;
+                    case Input.Keys.ENTER:
+                        curState = State.CRAFTING;
                         break;
                 }
                 return true;
@@ -131,10 +116,14 @@ public class Fifteenth extends ApplicationAdapter {
         });
     }
 
+
+    private float time;
     @Override
     public void render() {
         Gdx.gl.glClearColor(0.1f, 0.1f, 0.1f, 0.8f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+
+        time += Gdx.graphics.getDeltaTime();
 
         switch (curState) {
             case SHUFFLING:
@@ -152,15 +141,8 @@ public class Fifteenth extends ApplicationAdapter {
                 }
                 break;
             case SOLVING:
-                if (solution != null) {
-                    solvingTime += Gdx.graphics.getDeltaTime();
-                    int performedByNow = Math.min(solution.length, (int) (solvingTime / solveInterval));
-
-                    for (; solutionStep < performedByNow; solutionStep++) {
-                        curBoard.moveTo(solution[solutionStep]);
-                    }
-
-                    if (performedByNow == solution.length)
+                if (solver != null && !solver.isSolving() && solver.isSolvable()) {
+                    if (solver.performAnimationSteps(curBoard, Gdx.graphics.getDeltaTime()))
                         curState = State.IDLE;
                 }
         }
@@ -169,25 +151,34 @@ public class Fifteenth extends ApplicationAdapter {
         batch.setProjectionMatrix(cam.combined);
         shapeRenderer.setProjectionMatrix(cam.combined);
 
-        curBoard.draw(batch, shapeRenderer, mainFont, cellTextures, Gdx.graphics.getWidth() / 5, 0,
+        curBoard.draw(batch, shapeRenderer, captainFont, cellTextures, Gdx.graphics.getWidth() / 5, 0,
                 Gdx.graphics.getWidth() / 2);
 
-        if (solving) {
+        if (solver != null && solver.isSolving()) {
             batch.begin();
-            mainFont.draw(batch, "Loading..", -Gdx.graphics.getWidth() / 2 + 10, Gdx.graphics.getHeight() / 2 - 10);
+            jokerMediumFont.draw(batch, "Loading..", -Gdx.graphics.getWidth() / 2 + 10, Gdx.graphics.getHeight() / 2 - 10);
             batch.end();
         }
-        if (solved && solution != null) {
+        if (solver != null && solver.isSolvable() && !solver.isSolving()) {
             batch.begin();
-            if (solutionStep != solution.length && curState == State.SOLVING) {
-                mainFont.draw(batch, solutionStep + "/" + solution.length,
+            if (curState == State.SOLVING && !solver.animationFinished()) {
+                captainFont.draw(batch, solver.getAnimationStep() + "/" + solver.solution().length,
                         -Gdx.graphics.getWidth() / 2 + 10, 0);
             }
-            mainFont.draw(batch, "Found in " + new DecimalFormat("#.#").format(
-                    (float) solutionFoundTime / 1000) + " s",
+            jokerMediumFont.draw(batch, "Found in " +
+                            new DecimalFormat("#.#").format(solver.getSolutionFoundingTime()) + " s",
                     -Gdx.graphics.getWidth() / 2 + 10, Gdx.graphics.getHeight() / 2 - 10);
             batch.end();
         }
+
+        String logoString = "Leskiv Production";
+        batch.begin();
+        for (int i = 0; i < logoString.length(); i++) {
+            jokerSmallFont.draw(batch, logoString.charAt(i)+"",
+                    -Gdx.graphics.getWidth()/2+i*Gdx.graphics.getWidth()/40,
+                    (float)(-Gdx.graphics.getHeight()/3+(Math.sin(time/2+i*Math.PI/20)*Gdx.graphics.getHeight()/50)));
+        }
+        batch.end();
 
     }
 
