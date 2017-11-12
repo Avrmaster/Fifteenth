@@ -14,7 +14,7 @@ public class Board implements Comparable<Board> {
     private final int amountOfCells;
     private final int dimension;
 
-    final int searchNodeNum;
+    private final int searchNodeNum;
     final Board previous;
 
     //between cells interval for drawing
@@ -23,7 +23,7 @@ public class Board implements Comparable<Board> {
     private float translateProgress;
     private int lastMoved = -1;
     private Direction lastDir = null;
-    private final static float TRANSLATE_SPEED = 0.1f;
+    private final static float TRANSLATE_SPEED = 0.06f;
 
     private float goalRed = 0;
     private float curRed = 0;
@@ -59,7 +59,8 @@ public class Board implements Comparable<Board> {
             }
         }
     }
-    public Board(Board toCopy) {
+
+    private Board(Board toCopy) {
         this.amountOfCells = toCopy.amountOfCells;
         this.dimension = toCopy.dimension;
         this.blocks = new int[dimension][dimension];
@@ -71,7 +72,6 @@ public class Board implements Comparable<Board> {
             System.arraycopy(toCopy.blocks[i], 0, this.blocks[i], 0, dimension);
         }
     }
-
 
     // кількість блоків не на своєму місці
     public int hamming() {
