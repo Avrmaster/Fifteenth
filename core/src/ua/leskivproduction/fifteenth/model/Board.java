@@ -23,7 +23,7 @@ public class Board implements Comparable<Board> {
     private float translateProgress;
     private int lastMoved = -1;
     private Direction lastDir = null;
-    private final static float TRANSLATE_SPEED = 0.06f;
+    private final static float TRANSLATE_SPEED = 0.09f;
 
     private float goalRed = 0;
     private float curRed = 0;

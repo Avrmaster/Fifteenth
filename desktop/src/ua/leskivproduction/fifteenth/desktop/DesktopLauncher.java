@@ -10,7 +10,7 @@ public class DesktopLauncher {
 	public static void main (String[] arg) {
 		LwjglApplicationConfiguration cfg = new LwjglApplicationConfiguration();
 
-		cfg.title = "Particles Model 3D";
+		cfg.title = "Fifteenth puzzle";
 		cfg.useGL30 = true;
 
 		Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
