@@ -99,7 +99,7 @@ public class Board implements Comparable<Board> {
                 }
             }
         }
-        return (int)((dimension<4? 1 : dimension)*distance + searchNodeNum);
+        return ((dimension<4? 1 : dimension)*distance + searchNodeNum);
 //        return *distance + searchNodeNum;
     }
 
@@ -126,37 +126,48 @@ public class Board implements Comparable<Board> {
     public boolean solvable() {
         Board copy = new Board(this);
 
-        int swapsCnt = 0;
-        int blankSwapsCnt = 0;
+        int cnt1 = 0;
+        for (int c1 : copy.cellIterator()) {
+            if (c1 == -1) {
+                if (cnt1 != dimension*dimension-1) {
+                    int leftCnt = dimension-1-cnt1%dimension;
+                    int topCnt = dimension-1-cnt1/dimension;
 
+                    while (leftCnt-->0)
+                        copy.move(Direction.LEFT);
+                    while (topCnt-->0)
+                        copy.move(Direction.UP);
+                }
+                break;
+            }
+            cnt1++;
+        }
+
+        int swapsCnt = 0;
         int goalNum = 0;
         for (int c1 : copy.cellIterator()) {
-            if (c1 != goalNum || (c1 == -1 && goalNum != dimension*dimension-1)) {
+            if (c1 != goalNum && c1 != -1) {
                 int x1 = goalNum%dimension;
                 int y1 = goalNum/dimension;
 
                 int cnt = 0;
                 for (int c2 : copy.cellIterator()) {
-                    if (c2 == goalNum || (c1 == -1 && c2 == dimension*dimension-1)) {
+                    if (c2 == goalNum) {
                         int x2 = cnt % dimension;
                         int y2 = cnt / dimension;
                         copy.swap(x1, y1, x2, y2);
-                        if (c1 != -1)
-                            swapsCnt++;
-                        else
-                            blankSwapsCnt++;
-                        System.out.println(copy);
+                        swapsCnt++;
+
+
+
                         break;
                     }
                     cnt++;
                 }
             }
             goalNum++;
-
         }
-        System.out.println("Swaps cnt: "+swapsCnt);
-        System.out.println("Blank swaps cnt: "+blankSwapsCnt);
-        return (swapsCnt%2==0 || blankSwapsCnt%2==1) && copy.isGoal();
+        return (swapsCnt%2==0) && copy.isGoal();
     }
     private void swap(int x1, int y1, int x2, int y2) {
         int temp = blocks[y1][x1];

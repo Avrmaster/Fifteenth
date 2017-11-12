@@ -7,7 +7,7 @@ import java.util.LinkedList;
 
 public class Solver {
     private final static int DEPTH_CHECK = 15;
-    private final static float SOLVE_ANIMATION_TIME = 15;
+    private final static float SOLVE_ANIMATION_TIME = 10;
 
     private Board[] solution;
     private boolean solvable;
@@ -46,9 +46,7 @@ public class Solver {
     }
 
     public boolean animationFinished() {
-        if (solution == null)
-            return true;
-        return animationStep >= solution.length;
+        return solution == null || animationStep >= solution.length;
     }
 
     public int getAnimationStep() {

@@ -59,7 +59,7 @@ public class Fifteenth extends ApplicationAdapter {
 
         Music backgroundMusic = Gdx.audio.newMusic(Gdx.files.internal("core/assets/wastingTime.mp3"));
         backgroundMusic.setLooping(true);
-        //backgroundMusic.play();
+        backgroundMusic.play();
 
         captainFont = genFont("American Captain.ttf", Gdx.graphics.getHeight() * 0.065, Color.WHITE);
         jokerSmallFont = genFont("Jokerman-Regular.ttf", Gdx.graphics.getHeight() * 0.085, Color.WHITE);
@@ -100,6 +100,7 @@ public class Fifteenth extends ApplicationAdapter {
                             } else {
                                 curState = State.IDLE;
                             }
+                            solver = null;
                         }
                         break;
                     case Input.Keys.SPACE:
@@ -107,9 +108,11 @@ public class Fifteenth extends ApplicationAdapter {
                             curState = curState != State.SOLVING ? State.SOLVING : State.IDLE;
                             if (curState == State.SOLVING && (solver == null || !solver.isSolving())) {
                                 solver = new Solver(curBoard);
+                            } else {
+                                solver = null;
                             }
-                            break;
                         }
+                        break;
                     case Input.Keys.ENTER:
                         if (curState == State.IDLE) {
                             insertedCellNum = 0;
@@ -196,23 +199,31 @@ public class Fifteenth extends ApplicationAdapter {
             jokerMediumFont.draw(batch, "Loading..", -Gdx.graphics.getWidth() / 2 + 10, Gdx.graphics.getHeight() / 2 - 10);
             batch.end();
         }
-        if (solver != null && solver.isSolvable() && !solver.isSolving()) {
-            batch.begin();
-            if (curState == State.SOLVING && !solver.animationFinished()) {
-                captainFont.draw(batch, solver.getAnimationStep() + "/" + solver.solution().length,
-                        -Gdx.graphics.getWidth() / 2 + 10, 0);
+        if (curState != State.SHUFFLING) {
+            if (solver != null && solver.isSolvable() && !solver.isSolving()) {
+                batch.begin();
+                if (curState == State.SOLVING && !solver.animationFinished()) {
+                    captainFont.draw(batch, solver.getAnimationStep() + "/" + solver.solution().length,
+                            -Gdx.graphics.getWidth() / 2 + 10, 0);
+                }
+                jokerMediumFont.draw(batch, "Found in " +
+                                new DecimalFormat("#.#").format(solver.getSolutionFoundingTime()) + " s",
+                        -Gdx.graphics.getWidth() / 2 + 10, Gdx.graphics.getHeight() / 2 - 10);
+                batch.end();
             }
-            jokerMediumFont.draw(batch, "Found in " +
-                            new DecimalFormat("#.#").format(solver.getSolutionFoundingTime()) + " s",
-                    -Gdx.graphics.getWidth() / 2 + 10, Gdx.graphics.getHeight() / 2 - 10);
-            batch.end();
-        }
-        if (solver != null && !solver.isSolving() && !solver.isSolvable()) {
+            if (solver != null && !solver.isSolving() && !solver.isSolvable()) {
+                batch.begin();
+                jokerMediumFont.draw(batch, "Can't be solved!",
+                        -Gdx.graphics.getWidth() / 2 + 10, Gdx.graphics.getHeight() / 2 - 10);
+                batch.end();
+            }
+        } else {
             batch.begin();
-            jokerMediumFont.draw(batch, "Can't be solved!",
+            jokerMediumFont.draw(batch, "Shuffling..",
                     -Gdx.graphics.getWidth() / 2 + 10, Gdx.graphics.getHeight() / 2 - 10);
             batch.end();
         }
+
 
         String logoString = "Leskiv Production";
         batch.begin();
