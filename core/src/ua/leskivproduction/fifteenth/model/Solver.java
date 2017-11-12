@@ -60,9 +60,7 @@ public class Solver {
         new Thread(() -> {
             solutionFoundingTime = System.currentTimeMillis();
 
-            //TODO
-            //solvable = initial.hamming()%2 == 0;
-            solvable = true;
+            solvable = initial.solvable();
 
             if (solvable) {
                 LinkedList<Board> solutionList = new LinkedList<>();

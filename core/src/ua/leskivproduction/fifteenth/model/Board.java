@@ -115,6 +115,74 @@ public class Board implements Comparable<Board> {
         return true;
     }
 
+    public boolean isValid() {
+        int sum = 0;
+        for (int c : cellIterator()) {
+            sum += c;
+        }
+        return sum == (dimension*dimension-2)*(dimension*dimension-1)/2-1;
+    }
+
+    public boolean solvable() {
+        Board copy = new Board(this);
+
+        int swapsCnt = 0;
+        int blankSwapsCnt = 0;
+
+        int goalNum = 0;
+        for (int c1 : copy.cellIterator()) {
+            if (c1 != goalNum || (c1 == -1 && goalNum != dimension*dimension-1)) {
+                int x1 = goalNum%dimension;
+                int y1 = goalNum/dimension;
+
+                int cnt = 0;
+                for (int c2 : copy.cellIterator()) {
+                    if (c2 == goalNum || (c1 == -1 && c2 == dimension*dimension-1)) {
+                        int x2 = cnt % dimension;
+                        int y2 = cnt / dimension;
+                        copy.swap(x1, y1, x2, y2);
+                        if (c1 != -1)
+                            swapsCnt++;
+                        else
+                            blankSwapsCnt++;
+                        System.out.println(copy);
+                        break;
+                    }
+                    cnt++;
+                }
+            }
+            goalNum++;
+
+        }
+        System.out.println("Swaps cnt: "+swapsCnt);
+        System.out.println("Blank swaps cnt: "+blankSwapsCnt);
+        return (swapsCnt%2==0 || blankSwapsCnt%2==1) && copy.isGoal();
+    }
+    private void swap(int x1, int y1, int x2, int y2) {
+        int temp = blocks[y1][x1];
+        blocks[y1][x1] = blocks[y2][x2];
+        blocks[y2][x2] = temp;
+    }
+
+    public boolean setCell(int cellNum, int x, int y) {
+        if (x < 0 || y < 0 || x >= dimension || y >= dimension)
+            return false;
+        if (blocks[y][x] != -1)
+            return false;
+        blocks[y][x] = cellNum;
+        calcBackgroundColor();
+        return true;
+    }
+
+    public void clear() {
+        goalRed = 0;
+        for (int i = 0; i < dimension; i++) {
+            for (int j = 0; j < dimension; j++) {
+                blocks[i][j] = -1;
+            }
+        }
+    }
+
     @Override
     public int compareTo(Board o) {
         return Integer.compare(this.manhattan(), o.manhattan());
@@ -208,14 +276,18 @@ public class Board implements Comparable<Board> {
                     lastMoved = -1;
                 }
 
-                int manh = manhattan();
-                goalRed = (float)(Math.min(255, 255*manh/(dimension < 4? 10 : Math.pow(dimension, 4))));
+                calcBackgroundColor();
 
                 return true;
             }
             cnt++;
         }
         return false;
+    }
+
+    private void calcBackgroundColor() {
+        int manh = manhattan();
+        goalRed = (float)(Math.min(255, 255*manh/(dimension < 4? 10 : Math.pow(dimension, 4))));
     }
 
     public boolean moveTo(Board another) {
@@ -256,36 +328,46 @@ public class Board implements Comparable<Board> {
             }
         }
 
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
         batch.begin();
         int cnt = 0;
         for (int cell : cellIterator()) {
-            if (cell != -1) {
-                float cx, cy;
 
-                if (cell != lastMoved) {
-                    cx = (cnt%dimension)*cellSize;
-                    cy = (cnt/dimension +1)*cellSize;
-                } else {
-                    cx = (cnt%dimension +
-                            (lastDir == Direction.LEFT? 1-translateProgress : 0) +
-                            (lastDir == Direction.RIGHT? -1+translateProgress : 0))*cellSize;
-                    cy = (cnt/dimension + 1 +
-                            (lastDir == Direction.UP? 1-translateProgress : 0) +
-                            (lastDir == Direction.DOWN? -1+translateProgress : 0))*cellSize;
-                }
+            float cx, cy;
 
+            if (cell != lastMoved) {
+                cx = (cnt%dimension)*cellSize;
+                cy = (cnt/dimension +1)*cellSize;
+            } else {
+                cx = (cnt%dimension +
+                        (lastDir == Direction.LEFT? 1-translateProgress : 0) +
+                        (lastDir == Direction.RIGHT? -1+translateProgress : 0))*cellSize;
+                cy = (cnt/dimension + 1 +
+                        (lastDir == Direction.UP? 1-translateProgress : 0) +
+                        (lastDir == Direction.DOWN? -1+translateProgress : 0))*cellSize;
+            }
+
+            if (cell != -1 ) {
                 batch.draw(cells[cell],
-                        x+offsetX-sideSize/2+cx,
-                        y+offsetY+sideSize/2-cy,
+                        x + offsetX - sideSize / 2 + cx,
+                        y + offsetY + sideSize / 2 - cy,
                         cellDrawnSize, cellDrawnSize);
 
-                font.draw(batch, ""+(cell+1),
-                        x+offsetX-sideSize/2+cx+cellDrawnSize*0.8f,
-                        y+offsetY+sideSize/2-cy+cellDrawnSize*0.2f);
+                font.draw(batch, "" + (cell + 1),
+                        x + offsetX - sideSize / 2 + cx + cellDrawnSize * 0.8f,
+                        y + offsetY + sideSize / 2 - cy + cellDrawnSize * 0.2f);
+            } else if (!isValid()) {
+                shapeRenderer.setColor(0, 0, 0, 1);
+                shapeRenderer.rect(
+                        x + offsetX - sideSize / 2 + cx,
+                        y + offsetY + sideSize / 2 - cy,
+                        cellDrawnSize, cellDrawnSize);
             }
+
             cnt++;
         }
         batch.end();
+        shapeRenderer.end();
     }
 
     private Iterable<Integer> cellIterator() {
@@ -310,8 +392,8 @@ public class Board implements Comparable<Board> {
         for (int i = 0; i < dimension; i++) {
             builder.append("(");
             for (int j = 0; j < dimension; j++) {
-                builder.append(blocks[i][j]);
-                for (int k = 0; k < 6-(""+blocks[i][j]).length(); k++)
+                builder.append(blocks[i][j]+1);
+                for (int k = 0; k < 6-(""+(blocks[i][j]+1)).length(); k++)
                     builder.append(" ");
             }
             builder.append(")\n");

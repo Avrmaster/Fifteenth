@@ -17,7 +17,7 @@ import java.text.DecimalFormat;
 
 public class Fifteenth extends ApplicationAdapter {
     private static final int IMAGES_CNT = 15;
-    private static final int DIMENSION = 4;
+    private static final int DIMENSION = 3;
 
     private SpriteBatch batch;
     private ShapeRenderer shapeRenderer;
@@ -40,6 +40,7 @@ public class Fifteenth extends ApplicationAdapter {
     private int shuffledCnt;
 
     private Solver solver;
+    private int insertedCellNum;
 
     private BitmapFont genFont(String file, double size, Color color) {
         FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.internal("core/assets/"+file));
@@ -91,7 +92,7 @@ public class Fifteenth extends ApplicationAdapter {
                     }
                 switch (keycode) {
                     case Input.Keys.S:
-                        if (solver == null || !solver.isSolving()) {
+                        if (solver == null || !solver.isSolving() && curState != State.CRAFTING) {
                             if (curState != State.SHUFFLING) {
                                 shuffledCnt = 0;
                                 shufflingTime = 0;
@@ -102,14 +103,49 @@ public class Fifteenth extends ApplicationAdapter {
                         }
                         break;
                     case Input.Keys.SPACE:
-                        curState = curState != State.SOLVING ? State.SOLVING : State.IDLE;
-                        if (curState == State.SOLVING && (solver == null || !solver.isSolving())) {
-                            solver = new Solver(curBoard);
+                        if (curState != State.CRAFTING) {
+                            curState = curState != State.SOLVING ? State.SOLVING : State.IDLE;
+                            if (curState == State.SOLVING && (solver == null || !solver.isSolving())) {
+                                solver = new Solver(curBoard);
+                            }
+                            break;
+                        }
+                    case Input.Keys.ENTER:
+                        if (curState == State.IDLE) {
+                            insertedCellNum = 0;
+                            curState = State.CRAFTING;
+                            curBoard = new Board(DIMENSION);
+                            curBoard.clear();
+                        } else if (curState == State.CRAFTING) {
+                            if (!curBoard.isValid())
+                                curBoard = new Board(DIMENSION);
+                            curState = State.IDLE;
                         }
                         break;
-                    case Input.Keys.ENTER:
-                        curState = State.CRAFTING;
-                        break;
+                }
+                return true;
+            }
+
+            @Override
+            public boolean touchDown(int screenX, int screenY, int pointer, int button) {
+                if (curState == State.CRAFTING) {
+
+                    int screenWidth = Gdx.graphics.getWidth();
+                    int screenHeight = Gdx.graphics.getHeight();
+
+                    int cellSize = screenWidth/(2*DIMENSION);
+
+                    int cellX = Math.round((float)(screenX-screenWidth/2)/cellSize);
+                    int cellY = Math.round((float)(screenY+(screenHeight-screenWidth/2)/2)/cellSize)-1;
+
+                    if (curBoard.setCell(insertedCellNum, cellX, cellY)) {
+                        if (++insertedCellNum == DIMENSION*DIMENSION-1) {
+                            if (!curBoard.isValid())
+                                curBoard = new Board(DIMENSION);
+                            curState = State.IDLE;
+                        }
+                    }
+
                 }
                 return true;
             }
@@ -141,10 +177,11 @@ public class Fifteenth extends ApplicationAdapter {
                 }
                 break;
             case SOLVING:
-                if (solver != null && !solver.isSolving() && solver.isSolvable()) {
+                if (solver != null && !solver.isSolving()) {
                     if (solver.performAnimationSteps(curBoard, Gdx.graphics.getDeltaTime()))
                         curState = State.IDLE;
                 }
+                break;
         }
 
         cam.update();
@@ -170,6 +207,12 @@ public class Fifteenth extends ApplicationAdapter {
                     -Gdx.graphics.getWidth() / 2 + 10, Gdx.graphics.getHeight() / 2 - 10);
             batch.end();
         }
+        if (solver != null && !solver.isSolving() && !solver.isSolvable()) {
+            batch.begin();
+            jokerMediumFont.draw(batch, "Can't be solved!",
+                    -Gdx.graphics.getWidth() / 2 + 10, Gdx.graphics.getHeight() / 2 - 10);
+            batch.end();
+        }
 
         String logoString = "Leskiv Production";
         batch.begin();
@@ -179,6 +222,14 @@ public class Fifteenth extends ApplicationAdapter {
                     (float)(-Gdx.graphics.getHeight()/3+(Math.sin(time/2+i*Math.PI/20)*Gdx.graphics.getHeight()/50)));
         }
         batch.end();
+
+        if (curState == State.CRAFTING) {
+            batch.begin();
+            jokerMediumFont.draw(batch, ""+(insertedCellNum+1),
+                    Gdx.input.getX()-Gdx.graphics.getWidth()/2,
+                    Gdx.graphics.getHeight()/2-Gdx.input.getY());
+            batch.end();
+        }
 
     }
 
