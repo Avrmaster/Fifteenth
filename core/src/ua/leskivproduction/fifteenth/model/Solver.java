@@ -88,15 +88,15 @@ public class Solver {
                             solutionQueue.add(b);
                         }
                     }
-                    Board toMoveTo;
-                    while (true) {
-                        toMoveTo = solutionQueue.removeMin();
-                        if (curBoard.equals(toMoveTo))
-                            continue;
-
-                        break;
-                    }
-                    curBoard = toMoveTo;
+//                    Board toMoveTo;
+//                    while (true) {
+//                        toMoveTo = solutionQueue.removeMin();
+//                        if (curBoard.equals(toMoveTo))
+//                            continue;
+//
+//                        break;
+//                    }
+                    curBoard = solutionQueue.removeMin();
                     System.out.println(curBoard.manhattan() + " = " + solutionQueue.size());
                 }
 

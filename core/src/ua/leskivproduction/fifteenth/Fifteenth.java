@@ -17,7 +17,7 @@ import java.text.DecimalFormat;
 
 public class Fifteenth extends ApplicationAdapter {
     private static final int IMAGES_CNT = 15;
-    private static final int DIMENSION = 5;
+    private static final int DIMENSION = 4;
 
     private SpriteBatch batch;
     private ShapeRenderer shapeRenderer;
