@@ -17,7 +17,7 @@ import java.text.DecimalFormat;
 
 public class Fifteenth extends ApplicationAdapter {
     private static final int IMAGES_CNT = 15;
-    private static final int DIMENSION = 4;
+    private static final int DIMENSION = 5;
 
     private SpriteBatch batch;
     private ShapeRenderer shapeRenderer;
@@ -63,7 +63,7 @@ public class Fifteenth extends ApplicationAdapter {
 
         captainFont = genFont("American Captain.ttf", Gdx.graphics.getHeight() * 0.065, Color.WHITE);
         jokerSmallFont = genFont("Jokerman-Regular.ttf", Gdx.graphics.getHeight() * 0.085, Color.WHITE);
-        jokerMediumFont = genFont("Jokerman-Regular.ttf", Gdx.graphics.getHeight() * 0.100, Color.WHITE);
+        jokerMediumFont = genFont("Jokerman-Regular.ttf", Gdx.graphics.getHeight() * 0.085, Color.WHITE);
 
         cellTextures = new Texture[DIMENSION * DIMENSION];
         for (int i = 0; i < cellTextures.length; i++)
@@ -105,6 +105,9 @@ public class Fifteenth extends ApplicationAdapter {
                         break;
                     case Input.Keys.SPACE:
                         if (curState != State.CRAFTING) {
+                            if (solver != null && curState == State.SOLVING) {
+                                solver.terminate();
+                            }
                             curState = curState != State.SOLVING ? State.SOLVING : State.IDLE;
                             if (curState == State.SOLVING && (solver == null || !solver.isSolving())) {
                                 solver = new Solver(curBoard);

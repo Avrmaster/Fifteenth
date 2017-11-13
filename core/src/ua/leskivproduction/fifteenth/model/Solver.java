@@ -6,7 +6,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 
 public class Solver {
-    private final static int DEPTH_CHECK = 15;
+    private final static int DEPTH_CHECK = 3;
     private final static float SOLVE_ANIMATION_TIME = 10;
 
     private Board[] solution;
@@ -23,7 +23,7 @@ public class Solver {
      * @return time in ms
      */
     public float getSolutionFoundingTime() {
-        return (float)solutionFoundingTime/1000;
+        return (float) solutionFoundingTime / 1000;
     }
 
     public boolean isSolving() {
@@ -36,7 +36,7 @@ public class Solver {
     public boolean performAnimationSteps(Board board, float deltaTime) {
         if (!solving && solvable && animationStep < solution.length) {
             solvingAnimationTime += deltaTime;
-            int performedByNow = Math.min(solution.length, (int)(solvingAnimationTime/solveAnimInterval));
+            int performedByNow = Math.min(solution.length, (int) (solvingAnimationTime / solveAnimInterval));
             for (; animationStep < performedByNow; animationStep++) {
                 board.moveTo(solution[animationStep]);
             }
@@ -53,13 +53,14 @@ public class Solver {
         return animationStep;
     }
 
+
+    private final Thread thread;
+
     // знайти рішення для дошки initial
     public Solver(Board initial) {
-        new Thread(() -> {
+        thread = new Thread(() -> {
             solutionFoundingTime = System.currentTimeMillis();
-
             solvable = initial.solvable();
-
             if (solvable) {
                 LinkedList<Board> solutionList = new LinkedList<>();
                 MinQueue<Board> solutionQueue = new MinQueue<>();
@@ -87,7 +88,6 @@ public class Solver {
                             solutionQueue.add(b);
                         }
                     }
-
                     Board toMoveTo;
                     while (true) {
                         toMoveTo = solutionQueue.removeMin();
@@ -96,7 +96,6 @@ public class Solver {
 
                         break;
                     }
-
                     curBoard = toMoveTo;
                     System.out.println(curBoard.manhattan() + " = " + solutionQueue.size());
                 }
@@ -118,7 +117,15 @@ public class Solver {
 
             solutionFoundingTime = System.currentTimeMillis() - solutionFoundingTime;
             solving = false;
-        }).start();
+
+        });
+        thread.start();
+    }
+
+    public void terminate() {
+        System.out.println("Terminating..");
+        if (thread.isAlive())
+            thread.stop();
     }
 
     // чи має початкова дошка розв’язок

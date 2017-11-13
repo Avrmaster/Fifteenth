@@ -93,9 +93,9 @@ public class Board implements Comparable<Board> {
         for (int i = 0; i < dimension; i++) {
             for (int j = 0; j < dimension; j++) {
                 if (this.blocks[i][j] != -1) {
-                    int realX = this.blocks[i][j]%dimension;
-                    int realY = this.blocks[i][j]/dimension;
-                    distance += Math.abs(realX-j) + Math.abs(realY-i);
+                    int goalX = this.blocks[i][j]%dimension;
+                    int goalY = this.blocks[i][j]/dimension;
+                    distance += Math.abs(goalX-j) + Math.abs(goalY-i);
                 }
             }
         }
@@ -298,7 +298,7 @@ public class Board implements Comparable<Board> {
 
     private void calcBackgroundColor() {
         int manh = manhattan();
-        goalRed = (float)(Math.min(255, 255*manh/(dimension < 4? 10 : Math.pow(dimension, 4))));
+        goalRed = (float)(Math.min(255, 255*1.3*manh/(dimension < 4? 20 : Math.pow(dimension, 4))));
     }
 
     public boolean moveTo(Board another) {
