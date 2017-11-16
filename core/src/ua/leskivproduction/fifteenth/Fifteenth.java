@@ -5,6 +5,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.graphics.*;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
@@ -12,7 +13,9 @@ import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator.FreeTypeFont
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import ua.leskivproduction.fifteenth.model.Board;
 import ua.leskivproduction.fifteenth.model.Solver;
+import ua.leskivproduction.fifteenth.utils.Lerper;
 
+import java.awt.*;
 import java.text.DecimalFormat;
 
 public class Fifteenth extends ApplicationAdapter {
@@ -52,12 +55,18 @@ public class Fifteenth extends ApplicationAdapter {
         return font;
     }
 
+    private Music backgroundMusic;
+    private Music beast;
+    private float epicTransition;
+
     @Override
     public void create() {
         batch = new SpriteBatch();
         shapeRenderer = new ShapeRenderer();
 
-        Music backgroundMusic = Gdx.audio.newMusic(Gdx.files.internal("core/assets/wastingTime.mp3"));
+        backgroundMusic = Gdx.audio.newMusic(Gdx.files.internal("core/assets/wastingTime.mp3"));
+        beast = Gdx.audio.newMusic(Gdx.files.internal("core/assets/beautyAndTheBeast.mp3"));
+
         backgroundMusic.setLooping(true);
         backgroundMusic.play();
 
@@ -71,6 +80,9 @@ public class Fifteenth extends ApplicationAdapter {
 
         curBoard = new Board(DIMENSION);
         cam = new OrthographicCamera(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+
+        karp = new Texture("core/assets/cells/4.png");
+        domogarov = new Texture("core/assets/cells/dom.png");
 
         Gdx.input.setInputProcessor(new DummyInputController() {
             @Override
@@ -158,6 +170,7 @@ public class Fifteenth extends ApplicationAdapter {
         });
     }
 
+    private Texture karp, domogarov;
 
     private float time;
     @Override
@@ -166,6 +179,41 @@ public class Fifteenth extends ApplicationAdapter {
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         time += Gdx.graphics.getDeltaTime();
+
+        if (Gdx.input.isKeyPressed(Input.Keys.A) && Gdx.input.isKeyPressed(Input.Keys.R) &&
+                Gdx.input.isKeyPressed(Input.Keys.T)) {
+
+            if (epicTransition < 0.05) {
+                beast.setPosition(0);
+                beast.play();
+            }
+
+            epicTransition = Lerper.lerp(epicTransition, 1, 5*Gdx.graphics.getDeltaTime());
+            if (cellTextures.length >= 5)
+                cellTextures[4] = domogarov;
+
+        } else {
+            epicTransition = Lerper.lerp(epicTransition, 0, 5*Gdx.graphics.getDeltaTime());
+            if (cellTextures.length >= 5)
+                cellTextures[4] = karp;
+        }
+
+        backgroundMusic.setVolume(1-epicTransition);
+        beast.setVolume(epicTransition > 0.05? epicTransition : 0);
+        cam.zoom = 1-epicTransition*2/3;
+
+        Point domPos = curBoard.getCell(4);
+        if (domPos != null && epicTransition > 0.05) {
+            int cellSize = Gdx.graphics.getHeight()/DIMENSION;
+
+            cam.position.x = Lerper.lerp(cam.position.x, (domPos.x)*cellSize,
+                    5*Gdx.graphics.getDeltaTime());
+            cam.position.y = Lerper.lerp(cam.position.y, Gdx.graphics.getHeight()/2-(domPos.y+0.5f)*cellSize,
+                    5*Gdx.graphics.getDeltaTime());
+        } else {
+            cam.position.x = Lerper.lerp(cam.position.x, 0, 5*Gdx.graphics.getDeltaTime());
+            cam.position.y = Lerper.lerp(cam.position.y, 0, 5*Gdx.graphics.getDeltaTime());
+        }
 
         switch (curState) {
             case SHUFFLING:
@@ -244,6 +292,17 @@ public class Fifteenth extends ApplicationAdapter {
                     Gdx.graphics.getHeight()/2-Gdx.input.getY());
             batch.end();
         }
+
+
+        Gdx.gl.glEnable(GL20.GL_BLEND);
+        Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+        shapeRenderer.setColor(1, 1, 1, epicTransition/3);
+
+        shapeRenderer.circle(0, 0,
+                Gdx.graphics.getWidth()*0.8f);
+        shapeRenderer.end();
 
     }
 

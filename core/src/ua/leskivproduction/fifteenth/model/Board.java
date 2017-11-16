@@ -7,6 +7,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import ua.leskivproduction.fifteenth.utils.Lerper;
 
+import java.awt.*;
 import java.util.Iterator;
 
 public class Board implements Comparable<Board> {
@@ -183,6 +184,16 @@ public class Board implements Comparable<Board> {
         blocks[y][x] = cellNum;
         calcBackgroundColor();
         return true;
+    }
+
+    public Point getCell(int cellNum) {
+        int cnt = 0;
+        for (int c : cellIterator()) {
+            if (c == cellNum)
+                return new Point(cnt%dimension,cnt/dimension);
+            cnt++;
+        }
+        return null;
     }
 
     public void clear() {
